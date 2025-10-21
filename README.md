@@ -7,7 +7,7 @@
 * Apache
 * PHP
 * Kodi
-## 🛠 2. MOdifications
+## 🛠 2. Modifications
 
 ## ⚙️ 3.Configuration minimale
 **Nous avons simplement pris les configurations minimales de trisquel et modifié quelques composants**:
