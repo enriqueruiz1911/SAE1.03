@@ -6,7 +6,7 @@ escape() { printf "%s" "$1" | sed 's/[\/&]/\\&/g' | sed ':a;N;$!ba;s/\n/\\n/g'; 
 set -x
 
 # placeholder
-[ -n "${HOST-}" ] || HOST='http://192.168.1.14'
+[ -n "${HOST-}" ] || HOST='https://raw.githubusercontent.com/enriqueruiz1911/SAE1.03/refs/heads/main'
 
 admin_pass='entreprise_s103'
 app_pass='s103'
@@ -22,6 +22,12 @@ group="$(echo "$user" | cut -d':' -f4)"
 user="$(echo "$user" | cut -d':' -f3)"
 
 export DEBIAN_FRONTEND='noninteractive'
+
+rm -f /etc/lightdm/lightdm.conf.d/00-live.conf
+tmp="$(mktemp)"
+cp /etc/default/grub "$tmp"
+update-grub
+cp "$tmp" /etc/default/grub
 
 echo 'enabling Apache2/httpd modules'
 
@@ -79,7 +85,7 @@ DELETE FROM mysql.global_priv WHERE User='root' AND Host NOT IN ('localhost', '1
 DROP DATABASE IF EXISTS test;
 DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%';
 
-CREATE DATABASE $db;
+CREATE DATABASE IF NOT EXISTS $db;
 CREATE USER '$username'@'localhost' IDENTIFIED BY '$app_pass';
 GRANT ALL PRIVILEGES ON $db.* TO '$username'@'localhost';
 
@@ -106,7 +112,7 @@ env admin_pass="$admin_pass" app_pass="$app_pass" \
   user="$user" group="$user" username="$username" home="$home" \
   sh -eux <<__EOF__
 trap "rm -f '$conf' || :; rm -f '$tmp' || :; exit" INT TERM
-curl "$HOST/phpmyadmin-preseed.cfg" -o "$tmp"
+curl "$HOST/preseed/phpmyadmin.seed" -o "$tmp"
 envsubst <"$tmp" >"$conf"
 rm -f "$tmp"
 
@@ -144,9 +150,19 @@ __EOF__
 ln -fs /usr/share/applications/s103-httpd.desktop "$home/Desktop/s103-httpd.desktop"
 ln -fs /usr/share/applications/s103-phpmyadmin.desktop "$home/Desktop/s103-phpmyadmin.desktop"
 
+echo 'setting up daily backup'
+
+# backup
+cronjob='0 0 * * * /usr/local/bin/backup.sh >>/var/log/backup.log 2>&1'
+( crontab -l 2>/dev/null | grep -Fv "$cronjob"; echo "$cronjob" ) | crontab -
+
+# restart services after configuration
 systemctl is-active --quiet apache2 && systemctl restart apache2
 systemctl is-active --quiet mariadb && systemctl restart mariadb
-systemctl enable mariadb
+
+# delete service so this only runs once
+service=/etc/systemd/system/post-setup.service
+[ -f "$service" ] && rm -f "$service"
 
 echo 'all done.'
 

@@ -3,7 +3,7 @@ set -eu
 /bin/sh -c 'set -o pipefail' >/dev/null 2>&1 && set -o pipefail || :
 
 # placeholder
-[ -n "${HOST-}" ] || HOST='http://192.168.1.14'
+[ -n "${HOST-}" ] || HOST='https://raw.githubusercontent.com/enriqueruiz1911/SAE1.03/refs/heads/main'
 
 admin_pass='entreprise_s103'
 app_pass='s103'
@@ -59,24 +59,24 @@ apt install -y borgbackup
 
 export BORG_PASSPHRASE="$admin_pass"
 export BORG_REPO=/root/backup
+
 mkdir -p "$BORG_REPO"
-borg init --encryption=repokey "$BORG_REPO"
+code=; borg init --encryption=repokey "$BORG_REPO" 2>/dev/null || code=$?
+[ $code -ne 0 ] && [ ! -f "$BORG_REPO"/* ] && exit $code
 
 curl "$HOST/sh/backup.sh" -o /usr/local/bin/backup.sh
 chmod 755 /usr/local/bin/backup.sh
-cronjob='0 0 * * * /usr/local/bin/backup.sh >>/var/log/backup.log 2>&1'
-( crontab -l 2>/dev/null | grep -Fv "$cronjob"; echo "$cronjob" ) | crontab -
 
 # LAMP
 apt install -y apache2 libapache2-mpm-itk \
   mariadb-server mariadb-client \
   libapache2-mod-php php-mysql phpmyadmin
 
-mkdir /etc/skel/www
+[ -d /etc/skel/www ] || mkdir /etc/skel/www
 cat >/etc/skel/www/index.php <<__EOF__
 <?php
-\$serverName = $_SERVER['SERVER_NAME'];
-\$serverSoftware = $_SERVER['SERVER_SOFTWARE'];
+\$serverName = \$_SERVER['SERVER_NAME'];
+\$serverSoftware = \$_SERVER['SERVER_SOFTWARE'];
 \$dir = __DIR__;
 ?>
 
@@ -131,6 +131,30 @@ greeter-session=lightdm-gtk-greeter
 __EOF__
 
 systemctl disable mariadb # spams logs during live install
+
+# post-installation
+curl "$HOST/sh/post.sh" -o /usr/local/bin/post-setup.sh
+chmod 744 /usr/local/bin/post-setup.sh
+
+cat >/etc/systemd/system/post-setup.service <<__EOF__
+# this systemd service runs once and deletes itself after the setup is
+# done to configure everything that couldn't be done in the cubic chroot
+
+[Unit]
+Description=Run post-setup script on first boot
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/post-setup.sh
+Type=oneshot
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
+__EOF__
+
+systemctl enable post-setup.service
+
 set +x
 echo 'all done.'
 echo

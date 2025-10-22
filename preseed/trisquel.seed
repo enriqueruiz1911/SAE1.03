@@ -352,10 +352,9 @@ d-i grub-installer/only_debian boolean true
 ## still a usable /target directory. You can chroot to /target and use it
 ## directly, or use the apt-install and in-target commands to easily install
 ## packages and run commands in the target system.
-d-i preseed/late_command string in-target systemctl enable ssh xrdp mariadb
+d-i preseed/late_command string in-target systemctl enable ssh xrdp mariadb post-setup
 #
 # Enable disk encryption by default:
 #d-i partman-auto/method string crypto
 #
 # Generate /boot/grub/grub.cfg using the customized version of /etc/default/grub.
-ubiquity ubiquity/success_command string in-target sh -c 'm -f /etc/lightdm/lightdm.conf.d/00-live.conf; tmp="$(mktemp)"; cp /etc/default/grub "$tmp"; update-grub; cp "$tmp" /etc/default/grub'

@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eux
+set -eu
 
 errf() { code=$?; printf "$@" 1>&2; exit $code; }
 usage() {
@@ -8,7 +8,7 @@ usage() {
 }
 
 # placeholder
-[ -n "${HOST-}" ] || HOST='http://192.168.1.14'
+[ -n "${HOST-}" ] || HOST='https://raw.githubusercontent.com/enriqueruiz1911/SAE1.03/refs/heads/main'
 
 while getopts "i:" opt; do
   case "$opt" in
@@ -29,8 +29,8 @@ in="$(realpath -- "$in")"
   cd "$out"
   cpio -idm <"$in/bootlogo"
   rm -f "$out/bootlogo" || :
-  curl "$HOST/isolinux/back.jpg" -o "$out/back.jpg"
-  curl "$HOST/isolinux/back.png" -o "$out/back.png"
+  # curl "$HOST/isolinux/back.jpg" -o "$out/back.jpg"
+  # curl "$HOST/isolinux/back.png" -o "$out/back.png"
   curl "$HOST/isolinux/txt.cfg" -o "$out/txt.cfg"
   curl "$HOST/isolinux/rqtxt.cfg" -o "$out/rqtxt.cfg"
   find . | cpio -o >"$out/bootlogo"
