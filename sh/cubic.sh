@@ -43,7 +43,7 @@ apt purge -y lxde || :
 apt purge -y lxsession || :
 apt purge -y lxterminal || :
 apt purge -y xfwm4 || :
-apt install -y lxqt flatpak gnome-software gnome-software-plugin-flatpak neovim webext-ublock-origin
+apt install -y lxqt flatpak gnome-software gnome-software-plugin-flatpak webext-ublock-origin
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
 curl "$HOST/bg/s103.png" -o /usr/share/backgrounds/s103.png
@@ -67,7 +67,9 @@ code=; borg init --encryption=repokey "$BORG_REPO" 2>/dev/null || code=$?
 curl "$HOST/sh/backup.sh" -o /usr/local/bin/backup.sh
 chmod 755 /usr/local/bin/backup.sh
 
-# LAMP
+# development
+apt install -y neovim nodejs python3
+
 apt install -y apache2 libapache2-mpm-itk \
   mariadb-server mariadb-client \
   libapache2-mod-php php-mysql phpmyadmin
