@@ -5,6 +5,9 @@ set -eu
 # placeholder
 [ -n "${HOST-}" ] || HOST='http://192.168.1.14'
 
+admin_pass='entreprise_s103'
+app_pass='s103'
+
 echo
 echo 'S1.03 - Cubic environment setup'
 echo 'press ^C to abort'
@@ -43,32 +46,81 @@ apt purge -y xfwm4 || :
 apt install -y lxqt flatpak gnome-software gnome-software-plugin-flatpak neovim webext-ublock-origin
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 
-curl "$HOST/s103.jpg" -o /usr/share/backgrounds/s103.jpg
-curl "$HOST/s103_2.jpg" -o /usr/share/backgrounds/s103_2.jpg
-curl "$HOST/s103.png" -o /usr/share/backgrounds/s103.png
-curl "$HOST/s103_2.png" -o /usr/share/backgrounds/s103_2.png
+curl "$HOST/bg/s103.png" -o /usr/share/backgrounds/s103.png
+curl "$HOST/bg/s103.jpg" -o /usr/share/backgrounds/s103.jpg
+curl "$HOST/bg/s103_darker.png" -o /usr/share/backgrounds/s103_darker.png
+curl "$HOST/bg/s103_darker.jpg" -o /usr/share/backgrounds/s103_darker.jpg
 
 sed -i 's/Wallpaper=.*/Wallpaper=\/usr\/share\/backgrounds\/s103.png/' \
   /etc/xdg/pcmanfm-qt/lxqt/settings.conf
+
+# backup
+apt install -y borgbackup
+
+export BORG_PASSPHRASE="$admin_pass"
+export BORG_REPO=/root/backup
+mkdir -p "$BORG_REPO"
+borg init --encryption=repokey "$BORG_REPO"
+
+curl "$HOST/sh/backup.sh" -o /usr/local/bin/backup.sh
+chmod 755 /usr/local/bin/backup.sh
+cronjob='0 0 * * * /usr/local/bin/backup.sh >>/var/log/backup.log 2>&1'
+( crontab -l 2>/dev/null | grep -Fv "$cronjob"; echo "$cronjob" ) | crontab -
 
 # LAMP
 apt install -y apache2 libapache2-mpm-itk \
   mariadb-server mariadb-client \
   libapache2-mod-php php-mysql phpmyadmin
 
+mkdir /etc/skel/www
+cat >/etc/skel/www/index.php <<__EOF__
+<?php
+\$serverName = $_SERVER['SERVER_NAME'];
+\$serverSoftware = $_SERVER['SERVER_SOFTWARE'];
+\$dir = __DIR__;
+?>
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Page par défaut</title>
+</head>
+<body>
+  <header>
+    <h1>Bienvenue</h1>
+  </header>
+  <section>
+    <p>Vous êtes sur la page par défaut du serveur Web de l'ordinateur de votre entreprise.</p>
+    <p>Votre site Web est dans <strong><a href="file://<?php echo \$dir; ?>"><?php echo \$dir; ?></a></strong>.</p>
+  </section>
+  <footer>
+    <hr />
+    <p>
+      Hôte : <?php echo \$serverName; ?><br>
+      Logiciel : <?php echo \$serverSoftware; ?>
+    </p>
+  </footer>
+</body>
+</html>
+__EOF__
+
 # multimedia
 apt install -y ffmpeg imagemagick kodi
 
 # boot
 command -v magick >/dev/null 2>&1 || magick() { convert "$@"; }
-magick /usr/share/backgrounds/s103_2.png \
+magick /usr/share/backgrounds/s103_darker.png \
   -resize 640x480^ -gravity center -extent 640x480 /boot/background.png
-curl "$HOST/boot.jpg" -o /boot/grub/back.jpg
-grep -Fq 'GRUB_WALLPAPER="/boot/grub/back.jpg"' /etc/default/grub || {
-  echo 'GRUB_WALLPAPER="/boot/grub/back.jpg"' >>/etc/default/grub
+magick /boot/background.png -resize 640x480! -colors 256 \
+  -type Palette -dither FloydSteinberg /boot/grub/back.jpg
+# curl "$HOST/isolinux/back.jpg" -o /boot/grub/back.jpg
+grep -Fq 'GRUB_WALLPAPER="/boot/grub/back.png"' /etc/default/grub || {
+  echo 'GRUB_WALLPAPER="/boot/grub/back.png"' >>/etc/default/grub
 }
 
-sed -i 's/^#background=.*/background=\/usr\/share\/backgrounds\/s103_2.png/' /etc/lightdm/lightdm-gtk-greeter.conf
+sed -i 's/^#background=.*/background=\/usr\/share\/backgrounds\/s103_darker.png/' /etc/lightdm/lightdm-gtk-greeter.conf
 cat >/etc/lightdm/lightdm.conf.d/00-live.conf <<__EOF__
 [SeatDefaults]
 autologin-user=trisquel

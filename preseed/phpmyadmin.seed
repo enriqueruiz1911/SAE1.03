@@ -1,0 +1,31 @@
+phpmyadmin phpmyadmin/dbconfig-install boolean true
+
+phpmyadmin phpmyadmin/mysql/admin-user string root
+phpmyadmin phpmyadmin/mysql/admin-pass password $admin_pass
+
+phpmyadmin phpmyadmin/mysql/app-pass password $app_pass
+phpmyadmin phpmyadmin/app-password-confirm password $app_pass
+
+phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2
+phpmyadmin phpmyadmin/database-type select mysql
+phpmyadmin phpmyadmin/mysql/method select Unix socket
+phpmyadmin phpmyadmin/db/dbname string entreprisedb
+
+phpmyadmin phpmyadmin/remote/host select $HOSTNAME
+phpmyadmin phpmyadmin/remote/newhost string
+phpmyadmin phpmyadmin/remote/port string
+phpmyadmin phpmyadmin/db/app-user string $username@$HOSTNAME
+
+phpmyadmin phpmyadmin/internal/skip-preseed boolean false
+phpmyadmin phpmyadmin/dbconfig-reinstall boolean false
+phpmyadmin phpmyadmin/dbconfig-remove boolean false
+phpmyadmin phpmyadmin/dbconfig-upgrade boolean true
+phpmyadmin phpmyadmin/upgrade-backup boolean true
+
+phpmyadmin phpmyadmin/install-error select abort
+phpmyadmin phpmyadmin/remove-error select abort
+phpmyadmin phpmyadmin/upgrade-error select abort
+phpmyadmin phpmyadmin/missing-db-package-error select abort
+
+phpmyadmin phpmyadmin/mysql/authplugin select default
+
